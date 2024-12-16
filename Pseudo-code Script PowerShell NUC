@@ -1,0 +1,65 @@
+DÉBUT
+
+    # Configuration des variables
+    FTPServer ← "Adresse_IP"               // Adresse IP du serveur FTP
+    FTPUsername ← "ftp_user"                      // Nom d'utilisateur FTP
+    FTPPassword ← "ftp_password"                  // Mot de passe FTP
+    LocalFilePath ← "C:\chemin\de\l'archive.zip" // Chemin local pour enregistrer le fichier
+    RemoteFilePath ← "/ftp/TEST.zip"         // Chemin distant sur le serveur FTP
+    AdminEmail ← "Administrateur@gmail.com"    // Adresse e-mail de l'administrateur
+    SMTPServer ← "smtp.example.com"          // Serveur SMTP pour les e-mails
+    SMTPPort ← 587                           // Port SMTP
+    SMTPUsername ← "your-email@example.com"  // Nom d'utilisateur SMTP
+    SMTPPassword ← "your-password"           // Mot de passe SMTP
+
+    # Fonction pour envoyer un e-mail
+    Fonction Send-Email(Sujet, Corps) :
+        TANT QUE PAS D'ERREUR :
+            ESSAYER :
+                Envoyer un e-mail avec :
+                    - Destinataire ← AdminEmail
+                    - Expéditeur ← SMTPUsername
+                    - Sujet ← Sujet
+                    - Corps ← Corps
+                    - Serveur SMTP ← SMTPServer
+                    - Port ← SMTPPort
+                    - Utilise SSL
+                    - Authentification SMTP (SMTPUsername, SMTPPassword)
+                AFFICHER "E-mail envoyé avec succès."
+            ATTRAPER ERREUR :
+                AFFICHER "Erreur lors de l'envoi de l'e-mail : ERREUR"
+
+    # Fonction pour récupérer un fichier via FTP
+    Fonction Retrieve-FTPFile() :
+        TANT QUE PAS D'ERREUR :
+            ESSAYER :
+                AFFICHER "Connexion au serveur FTP et téléchargement..."
+                Créer une requête FTP vers → FTPServer + RemoteFilePath
+                Utiliser les identifiants → FTPUsername, FTPPassword
+                Configurer le transfert en mode binaire et passif
+
+                Ouvrir la connexion FTP
+                Créer un flux de lecture depuis le serveur FTP
+                Ouvrir un flux d'écriture pour sauvegarder LocalFilePath
+
+                TANT QUE des données sont lues dans le flux :
+                    Écrire les données dans le fichier local
+
+                FERMER les flux FTP et fichier local
+                AFFICHER "Téléchargement terminé avec succès."
+
+                Envoyer un e-mail avec :
+                    Sujet ← "Succès : Archive récupérée"
+                    Corps ← "L'archive a été récupérée avec succès depuis le serveur FTP."
+
+            ATTRAPER ERREUR :
+                errorMessage ← "Erreur lors du téléchargement de l'archive : ERREUR"
+                AFFICHER errorMessage
+                Envoyer un e-mail avec :
+                    Sujet ← "Échec : Récupération de l'archive"
+                    Corps ← errorMessage
+
+    # Exécution principale
+    APPELER Retrieve-FTPFile()
+
+FIN
