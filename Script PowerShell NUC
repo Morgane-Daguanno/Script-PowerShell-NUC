@@ -1,0 +1,60 @@
+# Configuration des variables
+$FTPServer = "10.10.121.21"        # Adresse IP du NUC (ou Debian avec FTP)
+$FTPUsername = "SEB"               # Nom d'utilisateur FTP
+$FTPPassword = "root123"           # Mot de passe FTP
+$LocalFilePath = "C:\Windows\Temp\TEST.zip" # Chemin local de l'archive ZIP à envoyer
+$RemoteFilePath = "/ftp/TEST.zip"  # Chemin distant sur le serveur Debian
+$AdminEmail = "Administrateur@gmail.com" # Adresse e-mail de l'administrateur
+$SMTPServer = "smtp.example.com"   # Serveur SMTP
+$SMTPPort = 587                    # Port SMTP
+$SMTPUsername = "your-email@example.com" # Nom d'utilisateur SMTP
+$SMTPPassword = "your-password"    # Mot de passe SMTP
+
+# Fonction pour envoyer un e-mail
+function Send-Email {
+    param (
+        [string]$Subject,
+        [string]$Body
+    )
+    try {
+        Send-MailMessage -To $AdminEmail -From $SMTPUsername -Subject $Subject -Body $Body `
+                         -SmtpServer $SMTPServer -Port $SMTPPort `
+                         -Credential (New-Object PSCredential $SMTPUsername, (ConvertTo-SecureString $SMTPPassword -AsPlainText -Force)) `
+                         -UseSsl
+        Write-Host "E-mail envoyé avec succès."
+    } catch {
+        Write-Host "Erreur lors de l'envoi de l'e-mail : $_"
+    }
+}
+
+# Fonction principale pour téléverser l'archive
+function Upload-FTPFile {
+    try {
+        # Créer une requête FTP
+        $ftpRequest = [System.Net.FtpWebRequest]::Create("ftp://$FTPServer$RemoteFilePath")
+        $ftpRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+        $ftpRequest.Credentials = New-Object System.Net.NetworkCredential($FTPUsername, $FTPPassword)
+        $ftpRequest.UseBinary = $true
+        $ftpRequest.UsePassive = $true
+
+        # Lire le fichier local
+        Write-Host "Lecture du fichier local $LocalFilePath..."
+        $fileContent = [System.IO.File]::ReadAllBytes($LocalFilePath)
+
+        # Envoyer le fichier au serveur FTP
+        $ftpStream = $ftpRequest.GetRequestStream()
+        $ftpStream.Write($fileContent, 0, $fileContent.Length)
+        $ftpStream.Close()
+
+        Write-Host "Téléversement terminé avec succès. Fichier envoyé à $RemoteFilePath."
+        Send-Email -Subject "Succès : Fichier téléversé" `
+                   -Body "Le fichier a été téléversé avec succès vers le serveur FTP ($FTPServer)."
+    } catch {
+        $errorMessage = "Erreur lors du téléversement de l'archive : $_"
+        Write-Host $errorMessage
+        Send-Email -Subject "Échec : Téléversement de l'archive" -Body $errorMessage
+    }
+}
+
+# Exécuter le téléversement
+Upload-FTPFile
